@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database Service
+  db:
+    image: postgres:15-alpine
+    container_name: enose-database
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: enosedb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # 2. FastAPI Backend Service
+  backend:
+    build: ./backend
+    container_name: enose-backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/enosedb
+      - DATA_DIR=/data
+      - SECRET_KEY=b38d3ad48e9a2637f90f23821034fe2da5e4860b0e5015b6305a415ff6c927bb
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount repository directory containing dataset_prostate.csv and dataset_prostate1.csv
+      - ./:/data
+      # Volume mount for saving trained models persistently inside the container
+      - saved_models:/workspace/saved_models
+    depends_on:
+      - db
+
+  # 3. Next.js Frontend Service
+  frontend:
+    build: ./frontend
+    container_name: enose-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  saved_models:
