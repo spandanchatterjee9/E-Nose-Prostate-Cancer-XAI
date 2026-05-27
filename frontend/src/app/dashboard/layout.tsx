@@ -8,9 +8,10 @@ import {
   Activity, 
   LineChart, 
   LogOut, 
-  Activity as SensorIcon, 
   ShieldCheck 
 } from 'lucide-react';
+
+const SensorIcon = Activity;
 import Link from 'next/link';
 
 export default function DashboardLayout({

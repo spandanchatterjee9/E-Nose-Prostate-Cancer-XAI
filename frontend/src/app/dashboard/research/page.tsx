@@ -425,7 +425,7 @@ export default function ResearchPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {Object.entries(ablation).map(([variant, val: any]) => {
+                    {Object.entries(ablation).map(([variant, val]: [string, any]) => {
                       const fullAcc = ablation['Full Model']?.accuracy || 1.0;
                       const drop = fullAcc - val.accuracy;
                       return (

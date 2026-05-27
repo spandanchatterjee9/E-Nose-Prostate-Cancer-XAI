@@ -15,7 +15,8 @@
     "recharts": "^2.12.7",
     "lucide-react": "^0.379.0",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1"
+    "jspdf": "^2.5.1",
+    "axios": "^1.6.8"
   },
   "devDependencies": {
     "typescript": "^5.4.5",
