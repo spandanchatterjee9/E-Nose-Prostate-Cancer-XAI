@@ -255,7 +255,22 @@ For each patient session, a $32 \times 31$ matrix is generated, representing 32 
     $$\text{Input}(32) \rightarrow \text{Batch Normalization} \rightarrow \text{Dense}(64, \text{ReLU}) \rightarrow \text{Dense}(32, \text{ReLU}) \rightarrow \text{Dense}(16, \text{ReLU}) \rightarrow \text{Softmax}(2)$$
 *   **Optimization**: SGD with momentum ($0.9$, learning rate $0.01$). Uses categorical crossentropy loss combined with $1:32$ class weights.
 
-#### 4. Proposed Hybrid CNN-GRU-Attention Model
+#### 4. CNN Sequence Model
+*   **Structure**: 1D Convolutional Neural Network processing sequence shape `(32, 31)` directly.
+    $$\text{Conv1D}(64, k=3, \text{ReLU}) \rightarrow \text{BN} \rightarrow \text{Dropout}(0.2) \rightarrow \text{Conv1D}(32, k=3, \text{ReLU}) \rightarrow \text{BN} \rightarrow \text{Dropout}(0.2) \rightarrow \text{GlobalAveragePooling1D} \rightarrow \text{Dense}(32, \text{ReLU}) \rightarrow \text{BN} \rightarrow \text{Dropout}(0.2) \rightarrow \text{Softmax}(2)$$
+*   **Optimization**: Adam optimizer with `ReduceLROnPlateau` and `EarlyStopping` callbacks.
+
+#### 5. GRU Sequence Model
+*   **Structure**: Recurrent Gated Recurrent Unit network processing sequence shape `(32, 31)` directly.
+    $$\text{GRU}(64, \text{return\_seq=True}) \rightarrow \text{BN} \rightarrow \text{Dropout}(0.2) \rightarrow \text{GRU}(32, \text{return\_seq=False}) \rightarrow \text{BN} \rightarrow \text{Dropout}(0.2) \rightarrow \text{Dense}(32, \text{ReLU}) \rightarrow \text{BN} \rightarrow \text{Dropout}(0.2) \rightarrow \text{Softmax}(2)$$
+*   **Optimization**: Adam optimizer with class weights and learning rate decay.
+
+#### 6. CNN-GRU Sequence Model
+*   **Structure**: Stacked hybrid spatial-temporal network (without attention pooling).
+    $$\text{Conv1D}(64, k=3, \text{ReLU}) \rightarrow \text{BN} \rightarrow \text{Dropout}(0.2) \rightarrow \text{GRU}(64, \text{return\_seq=False}) \rightarrow \text{BN} \rightarrow \text{Dropout}(0.2) \rightarrow \text{Dense}(32, \text{ReLU}) \rightarrow \text{BN} \rightarrow \text{Dropout}(0.2) \rightarrow \text{Softmax}(2)$$
+*   **Optimization**: Adam optimizer with early stopping based on validation loss.
+
+#### 7. Proposed Hybrid CNN-GRU-Attention Model
 This sequence network processes the patient run as a single spatial-temporal block:
 
 ```

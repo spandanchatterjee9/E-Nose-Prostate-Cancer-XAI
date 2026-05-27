@@ -44,26 +44,40 @@ def main():
     hybrid_metrics = trainer.evaluate_model('hybrid_model', hybrid_model, is_sequence=True)
     print(f"Hybrid Model - Accuracy: {hybrid_metrics['accuracy']:.4f}, Recall: {hybrid_metrics['recall']:.4f}, AUC: {hybrid_metrics['roc_auc']:.4f}")
 
-    print("\n6. Running Ablation Study (Fast 1 epoch check)...")
+    print("\n6. Training CNN Sequence Model (Fast 2 epochs check)...")
+    cnn_model, cnn_hist, cnn_time = trainer.train_cnn(weighted=True, epochs=2, batch_size=16)
+    cnn_metrics = trainer.evaluate_model('cnn', cnn_model, is_sequence=True)
+    print(f"CNN Model - Accuracy: {cnn_metrics['accuracy']:.4f}, Recall: {cnn_metrics['recall']:.4f}, AUC: {cnn_metrics['roc_auc']:.4f}")
+
+    print("\n7. Training GRU Sequence Model (Fast 2 epochs check)...")
+    gru_model, gru_hist, gru_time = trainer.train_gru(weighted=True, epochs=2, batch_size=16)
+    gru_metrics = trainer.evaluate_model('gru', gru_model, is_sequence=True)
+    print(f"GRU Model - Accuracy: {gru_metrics['accuracy']:.4f}, Recall: {gru_metrics['recall']:.4f}, AUC: {gru_metrics['roc_auc']:.4f}")
+
+    print("\n8. Training CNN-GRU Sequence Model (Fast 2 epochs check)...")
+    cnn_gru_model, cnn_gru_hist, cnn_gru_time = trainer.train_cnn_gru(weighted=True, epochs=2, batch_size=16)
+    cnn_gru_metrics = trainer.evaluate_model('cnn_gru', cnn_gru_model, is_sequence=True)
+    print(f"CNN-GRU Model - Accuracy: {cnn_gru_metrics['accuracy']:.4f}, Recall: {cnn_gru_metrics['recall']:.4f}, AUC: {cnn_gru_metrics['roc_auc']:.4f}")
+
+    print("\n9. Running Ablation Study (Fast 1 epoch check)...")
     ablation_results = trainer.run_ablation_study(epochs=1)
     for model_variant, metrics in ablation_results.items():
         print(f"  Ablation [{model_variant}] - Acc: {metrics['accuracy']:.4f}, Recall: {metrics['recall']:.4f}, AUC: {metrics['roc_auc']:.4f}")
 
-    print("\n7. Initializing Explainability Engine...")
+    print("\n10. Initializing Explainability Engine...")
     explainer = ExplainabilityEngine(loader)
     
-    print("\n8. Explaining Tabular Instance (Random Forest)...")
+    print("\n11. Explaining Tabular Instance (Random Forest)...")
     instance = X_test[0]
     rf_explanation = explainer.explain_tabular_instance('random_forest', instance)
     print("Random Forest Top Attributions:")
-    # Print top 5 attributions
     sorted_rf_att = sorted(rf_explanation.items(), key=lambda item: abs(item[1]), reverse=True)
     for name, val in sorted_rf_att[:5]:
         print(f"  {name}: {val:+.6f}")
         
-    print("\n9. Explaining Sequence Instance (Hybrid)...")
+    print("\n12. Explaining Sequence Instance (Proposed Hybrid)...")
     seq_instance = X_test_seq[0]
-    hybrid_explanation = explainer.explain_hybrid_sequence(seq_instance)
+    hybrid_explanation = explainer.explain_sequence_instance('hybrid_model', seq_instance)
     print("Hybrid Model Predictions:")
     print(f"  HBP Probability: {hybrid_explanation['prediction']['HBP']:.4f}")
     print(f"  CaP Probability: {hybrid_explanation['prediction']['CaP']:.4f}")
@@ -74,6 +88,16 @@ def main():
     print("Hybrid Feature Importance (Top 5):")
     sorted_feat_imp = sorted(hybrid_explanation['feature_importance'].items(), key=lambda item: item[1], reverse=True)
     for name, val in sorted_feat_imp[:5]:
+        print(f"  {name}: {val:.6f}")
+        
+    print("\n13. Explaining Sequence Instance (CNN Baseline)...")
+    cnn_explanation = explainer.explain_sequence_instance('cnn', seq_instance)
+    print("CNN Model Predictions:")
+    print(f"  HBP Probability: {cnn_explanation['prediction']['HBP']:.4f}")
+    print(f"  CaP Probability: {cnn_explanation['prediction']['CaP']:.4f}")
+    print("CNN Feature Saliency (Top 5):")
+    sorted_cnn_feat = sorted(cnn_explanation['feature_importance'].items(), key=lambda item: item[1], reverse=True)
+    for name, val in sorted_cnn_feat[:5]:
         print(f"  {name}: {val:.6f}")
         
     print("\n=== ALL ML/DL COMPONENT VERIFICATIONS COMPLETED SUCCESSFULLY ===")

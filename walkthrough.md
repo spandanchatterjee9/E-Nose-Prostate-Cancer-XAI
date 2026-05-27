@@ -33,7 +33,10 @@ graph TD
 1. **Random Forest (Tabular Baseline)**: Runs classification on individual sensors. Predictions are averaged to classify a VOC session. Explained using TreeSHAP.
 2. **XGBoost (Tabular Baseline)**: High-performance gradient boosted decision trees. Explained using TreeSHAP.
 3. **Baseline DNN (Tabular Baseline)**: Multilayer perceptron classifying sensors. Explained using KernelSHAP.
-4. **Proposed Hybrid CNN-GRU-Attention (Sequence Model)**: Processes the full 32-sensor sequence input of shape `(32, 31)`.
+4. **CNN Sequence Model (Sequence Baseline)**: 1D CNN processing full 32-sensor sequence inputs. Explained using backpropagation gradient saliency.
+5. **GRU Sequence Model (Sequence Baseline)**: Gated Recurrent Units capturing temporal VOC dynamics. Explained using backpropagation gradient saliency.
+6. **CNN-GRU Sequence Model (Sequence Baseline)**: Stacked CNN-GRU capturing spatial and temporal sensor patterns. Explained using backpropagation gradient saliency.
+7. **Proposed Hybrid CNN-GRU-Attention (Sequence Model)**: Processes the full 32-sensor sequence input of shape `(32, 31)`.
    - **CNN Branch**: 1D Convolutional layers extract spatial sensor response configurations.
    - **GRU Branch**: Gated Recurrent Units capture temporal dynamics of gas exposure.
    - **Attention Mechanism**: Learns context weights ($A_1 \dots A_{32}$) indicating which sensors had the most diagnostic value.
@@ -108,31 +111,36 @@ We verified the API and ML engines by running the unbuffered endpoint test suite
   Patient Registered successfully! ID: 1
 
 4. Testing Prediction Inference & XAI Attributions (DNN Model)...
-  Model file exists but DB result missing. Seeding Random Forest benchmark metrics...
-  Model file exists but DB result missing. Seeding XGBoost benchmark metrics...
-  Model file exists but DB result missing. Seeding Baseline DNN benchmark metrics...
-  Model file exists but DB result missing. Seeding Hybrid Model benchmark metrics...
   Prediction Completed!
     Diagnosis: CaP
-    Confidence: 88.58%
+    Confidence: 91.57%
     SHAP Attributions Count: 32
 
 5. Testing Proposed Hybrid CNN-GRU-Attention Prediction...
   Hybrid Prediction Completed!
     Diagnosis: CaP
-    Confidence: 61.02%
+    Confidence: 56.92%
     Attention Weights Count: 32
     Saliency Feature Importance Count: 31
 
+5b. Testing CNN Sequence Prediction...
+  CNN Prediction Completed!
+    Diagnosis: CaP
+    Confidence: 53.96%
+    Saliency Feature Importance Count: 31
+
 6. Testing Prediction History Query...
-  History items count: 2
+  History items count: 3
 
 7. Testing Benchmarking Metrics...
-  Benchmark metrics calculated for 4 models:
-    random_forest: Acc=0.4253, AUC=0.4034
-    xgboost: Acc=0.4967, AUC=0.4313
+  Benchmark metrics calculated for 7 models:
     baseline_dnn: Acc=0.5019, AUC=0.3752
     hybrid_model: Acc=0.5225, AUC=0.3863
+    random_forest: Acc=0.4253, AUC=0.4034
+    xgboost: Acc=0.4967, AUC=0.4313
+    cnn: Acc=0.6050, AUC=0.6669
+    gru: Acc=0.4775, AUC=0.3810
+    cnn_gru: Acc=0.4300, AUC=0.4299
 
 8. Cleaning up database records...
   Test patient record and cascade predictions cleaned successfully.

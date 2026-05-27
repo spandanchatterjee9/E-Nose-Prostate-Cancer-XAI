@@ -85,6 +85,21 @@ def main():
     print(f"    Attention Weights Count: {len(pred_data_hybrid['attention_weights'] or [])}")
     print(f"    Saliency Feature Importance Count: {len(pred_data_hybrid['feature_importance'] or {})}")
 
+    # 5b. Predict using CNN Sequence Model
+    print("\n5b. Testing CNN Sequence Prediction...")
+    predict_payload_cnn = {
+        "patient_id": patient_id,
+        "model_name": "cnn",
+        "simulated_run_index": 0
+    }
+    res = client.post("/api/v1/predict/", json=predict_payload_cnn, headers=headers)
+    assert res.status_code == 200
+    pred_data_cnn = res.json()
+    print(f"  CNN Prediction Completed!")
+    print(f"    Diagnosis: {pred_data_cnn['prediction_label']}")
+    print(f"    Confidence: {pred_data_cnn['confidence'] * 100:.2f}%")
+    print(f"    Saliency Feature Importance Count: {len(pred_data_cnn['feature_importance'] or {})}")
+
     # 6. Fetch Prediction History
     print("\n6. Testing Prediction History Query...")
     res = client.get("/api/v1/history/", headers=headers)

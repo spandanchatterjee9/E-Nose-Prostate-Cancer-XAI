@@ -245,6 +245,7 @@ export default function PredictPage() {
 
   const selectedPatientObj = patients.find(p => p.id.toString() === selectedPatientId);
   const isHybrid = prediction?.model_name === 'hybrid_model';
+  const isSequence = ['hybrid_model', 'cnn', 'gru', 'cnn_gru'].includes(prediction?.model_name);
 
   return (
     <div className="space-y-8">
@@ -296,6 +297,9 @@ export default function PredictPage() {
                 className="w-full bg-slate-950/60 border border-slate-800 focus:border-indigo-500 rounded-lg py-2.5 px-3 text-sm text-slate-100 focus:outline-none transition-all"
               >
                 <option value="hybrid_model" className="bg-slate-950">Proposed Hybrid CNN-GRU-Attention</option>
+                <option value="cnn" className="bg-slate-950">CNN Sequence Baseline</option>
+                <option value="gru" className="bg-slate-950">GRU Sequence Baseline</option>
+                <option value="cnn_gru" className="bg-slate-950">CNN-GRU Sequence Baseline</option>
                 <option value="baseline_dnn" className="bg-slate-950">Baseline Dense Neural Network</option>
                 <option value="random_forest" className="bg-slate-950">Random Forest Baseline</option>
                 <option value="xgboost" className="bg-slate-950">XGBoost Baseline</option>
@@ -541,10 +545,10 @@ export default function PredictPage() {
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-bold text-white text-sm">
-                        {isHybrid ? 'Feature Saliency Attribution' : 'SHAP Waterfall Attributions'}
+                        {isSequence ? 'Feature Saliency Attribution' : 'SHAP Waterfall Attributions'}
                       </h4>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        {isHybrid 
+                        {isSequence 
                           ? 'Sensitivity gradients showing the impact of VOC features on model output.' 
                           : 'Feature values pushing the model prediction towards CaP (positive, red) or HBP (negative, green).'}
                       </p>
@@ -554,7 +558,7 @@ export default function PredictPage() {
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                           layout="vertical"
-                          data={isHybrid ? getSaliencyData() : getShapData()}
+                          data={isSequence ? getSaliencyData() : getShapData()}
                           margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -563,7 +567,7 @@ export default function PredictPage() {
                           <Tooltip 
                             contentStyle={{ backgroundColor: '#090e18', borderColor: '#334155' }}
                           />
-                          {isHybrid ? (
+                          {isSequence ? (
                             <Bar dataKey="importance" fill="#22d3ee" barSize={10} />
                           ) : (
                             <Bar dataKey="value" barSize={10}>
@@ -575,7 +579,7 @@ export default function PredictPage() {
                               ))}
                             </Bar>
                           )}
-                          {!isHybrid && <ReferenceLine x={0} stroke="#475569" />}
+                          {!isSequence && <ReferenceLine x={0} stroke="#475569" />}
                         </BarChart>
                       </ResponsiveContainer>
                     </div>

@@ -121,36 +121,61 @@ class ExplainabilityEngine:
         return explanation
 
     def explain_hybrid_sequence(self, sequence):
+        """Wrapper for backwards compatibility."""
+        return self.explain_sequence_instance('hybrid_model', sequence)
+
+    def explain_sequence_instance(self, model_name, sequence):
         """
-        Explains a single patient run sequence of shape (32, 31).
-        1. Runs a forward pass to extract the Attention weights (shape: 32).
-        2. Computes gradient-based feature attribution for each feature.
+        Explains a single patient run sequence of shape (32, 31) for any sequence model.
+        1. Runs a forward pass to extract probabilities and attention weights (if hybrid).
+        2. Computes gradient-based feature attribution for each feature using GradientTape.
         """
         # Ensure shape is (1, 32, 31)
         x = np.array(sequence).reshape(1, 32, 31)
         
-        # Load model with custom attention layer
-        model_path = os.path.join(MODELS_DIR, 'hybrid_model.keras')
-        model = tf.keras.models.load_model(
-            model_path, 
-            custom_objects={'TemporalAttention': TemporalAttention}
-        )
+        # Determine model file name
+        if model_name == 'hybrid_model':
+            model_file = 'hybrid_model.keras'
+        elif model_name == 'cnn':
+            model_file = 'cnn.keras'
+        elif model_name == 'gru':
+            model_file = 'gru.keras'
+        elif model_name == 'cnn_gru':
+            model_file = 'cnn_gru.keras'
+        else:
+            raise ValueError(f"Unknown sequence model: {model_name}")
+            
+        model_path = os.path.join(MODELS_DIR, model_file)
         
+        # Load model
+        if model_name == 'hybrid_model':
+            model = tf.keras.models.load_model(
+                model_path, 
+                custom_objects={'TemporalAttention': TemporalAttention}
+            )
+        else:
+            model = tf.keras.models.load_model(model_path)
+            
         # Forward pass
-        probs, attention_weights = model.predict(x, verbose=0)
+        outputs = model.predict(x, verbose=0)
         
-        # Extract attention weights for the 32 sensors
-        weights = attention_weights[0].tolist() # List of size 32
-        
+        if isinstance(outputs, list):
+            probs = outputs[0]
+            attention_weights = outputs[1][0].tolist() # List of size 32
+        else:
+            probs = outputs
+            attention_weights = [1.0 / 32.0] * 32 # Equal weights for models without attention
+            
         # Compute gradient-based feature importance:
-        # We compute the gradients of the class 1 (CaP) output with respect to the input sequence features.
-        # This is a highly robust saliency map method for sequence models in literature.
         x_tensor = tf.convert_to_tensor(x, dtype=tf.float32)
         with tf.GradientTape() as tape:
             tape.watch(x_tensor)
-            preds, _ = model(x_tensor)
-            cap_prob = preds[:, 1]
-            
+            preds = model(x_tensor)
+            if isinstance(preds, list):
+                cap_prob = preds[0][:, 1]
+            else:
+                cap_prob = preds[:, 1]
+                
         grads = tape.gradient(cap_prob, x_tensor)
         # Average gradients across the 32 sequence steps to get feature importance
         mean_grads = tf.reduce_mean(tf.abs(grads), axis=1)[0].numpy()
@@ -165,6 +190,6 @@ class ExplainabilityEngine:
                 'HBP': float(probs[0][0]),
                 'CaP': float(probs[0][1])
             },
-            'attention_weights': weights, # Importance of each sensor S1-S32
-            'feature_importance': feature_importance # Importance of each VOC feature
+            'attention_weights': attention_weights,
+            'feature_importance': feature_importance
         }

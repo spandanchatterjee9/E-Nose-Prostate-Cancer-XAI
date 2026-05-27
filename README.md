@@ -198,10 +198,13 @@ These benchmark results are generated dynamically on the test set (`dataset_pros
 
 | Model Name | Accuracy | Precision | Recall (Sensitivity) | F1-Score | ROC-AUC |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **★ Proposed Hybrid** | **52.3%** | **53.8%** | **54.2%** | **54.0%** | **0.386** |
-| **Baseline DNN** | 50.2% | 51.5% | 52.0% | 51.7% | 0.375 |
-| **XGBoost Baseline** | 49.7% | 50.8% | 51.1% | 50.9% | 0.431 |
-| **Random Forest Baseline** | 42.5% | 43.1% | 43.8% | 43.4% | 0.403 |
+| **★ Proposed Hybrid** | **50.0%** | **50.0%** | **100.0%** | **66.7%** | **0.393** |
+| **CNN Sequence Baseline** | 60.5% | 55.2% | 94.5% | 69.7% | 0.667 |
+| **GRU Sequence Baseline** | 47.8% | 48.3% | 71.0% | 57.5% | 0.381 |
+| **CNN-GRU Sequence Baseline** | 43.0% | 44.4% | 45.5% | 44.9% | 0.430 |
+| **Baseline DNN** | 50.0% | 50.0% | 100.0% | 66.7% | 0.384 |
+| **XGBoost Baseline** | 49.7% | 49.8% | 83.5% | 62.4% | 0.431 |
+| **Random Forest Baseline** | 42.5% | 42.1% | 36.7% | 39.2% | 0.403 |
 
 *Note: Performance scores represent metrics derived under the 1:32 class weighting penalty scheme to prevent critical False Negatives on cancer detection.*
 
@@ -210,10 +213,11 @@ We audit the proposed Hybrid model to measure the contribution of each network m
 
 | Architecture Variant | Accuracy | Precision | Recall | ROC-AUC | Accuracy Drop |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Full Hybrid Model** | **52.3%** | **53.8%** | **54.2%** | **0.386** | *Reference* |
-| *w/o Attention Layer* | 50.4% | 51.8% | 52.1% | 0.378 | **-1.9%** |
-| *w/o GRU Block* | 48.9% | 49.5% | 50.2% | 0.362 | **-3.4%** |
-| *w/o CNN Block* | 47.5% | 48.0% | 48.9% | 0.350 | **-4.8%** |
+| **Full Hybrid Model** (CNN-GRU-Attention) | **50.0%** | **50.0%** | **100.0%** | **0.393** | *Reference* |
+| **No Attention** (CNN-GRU) | 43.0% | 44.4% | 45.5% | 0.430 | **-7.0%** |
+| **No GRU** (CNN) | 60.5% | 55.2% | 94.5% | 0.667 | **+10.5%** |
+| **No CNN** (GRU) | 47.8% | 48.3% | 71.0% | 0.381 | **-2.2%** |
+| **Baseline DNN** (Tabular) | 50.0% | 50.0% | 100.0% | 0.359 | **0.0%** |
 
 ---
 

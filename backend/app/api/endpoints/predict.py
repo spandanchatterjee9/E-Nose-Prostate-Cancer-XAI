@@ -128,6 +128,84 @@ def ensure_models_trained(db: Session):
             classification_report={'roc_points': metrics['roc_points']}
         ))
 
+    # 5. CNN Baseline
+    cnn_path = os.path.join(MODELS_DIR, 'cnn.keras')
+    db_cnn = db.query(models.ModelResult).filter(models.ModelResult.model_name == 'cnn').first()
+    
+    if not os.path.exists(cnn_path):
+        print("Pre-training CNN model (fast 10 epochs) for active inference...")
+        model, hist, _ = trainer.train_cnn(weighted=True, epochs=10, batch_size=16)
+        metrics = trainer.evaluate_model('cnn', model, is_sequence=True)
+        crud.create_model_result(db, schemas.ModelResultCreate(
+            model_name='cnn', run_id='init_cnn',
+            accuracy=metrics['accuracy'], precision=metrics['precision'], recall=metrics['recall'],
+            f1_score=metrics['f1_score'], roc_auc=metrics['roc_auc'], confusion_matrix=metrics['confusion_matrix'],
+            classification_report={'roc_points': metrics['roc_points']}
+        ))
+        crud.create_experiment_log(db, 'cnn', 'init_cnn', {'epochs': 10, 'batch_size': 16}, hist)
+    elif not db_cnn:
+        print("Model file exists but DB result missing. Seeding CNN benchmark metrics...")
+        model = tf.keras.models.load_model(cnn_path)
+        metrics = trainer.evaluate_model('cnn', model, is_sequence=True)
+        crud.create_model_result(db, schemas.ModelResultCreate(
+            model_name='cnn', run_id='init_cnn',
+            accuracy=metrics['accuracy'], precision=metrics['precision'], recall=metrics['recall'],
+            f1_score=metrics['f1_score'], roc_auc=metrics['roc_auc'], confusion_matrix=metrics['confusion_matrix'],
+            classification_report={'roc_points': metrics['roc_points']}
+        ))
+
+    # 6. GRU Baseline
+    gru_path = os.path.join(MODELS_DIR, 'gru.keras')
+    db_gru = db.query(models.ModelResult).filter(models.ModelResult.model_name == 'gru').first()
+    
+    if not os.path.exists(gru_path):
+        print("Pre-training GRU model (fast 10 epochs) for active inference...")
+        model, hist, _ = trainer.train_gru(weighted=True, epochs=10, batch_size=16)
+        metrics = trainer.evaluate_model('gru', model, is_sequence=True)
+        crud.create_model_result(db, schemas.ModelResultCreate(
+            model_name='gru', run_id='init_gru',
+            accuracy=metrics['accuracy'], precision=metrics['precision'], recall=metrics['recall'],
+            f1_score=metrics['f1_score'], roc_auc=metrics['roc_auc'], confusion_matrix=metrics['confusion_matrix'],
+            classification_report={'roc_points': metrics['roc_points']}
+        ))
+        crud.create_experiment_log(db, 'gru', 'init_gru', {'epochs': 10, 'batch_size': 16}, hist)
+    elif not db_gru:
+        print("Model file exists but DB result missing. Seeding GRU benchmark metrics...")
+        model = tf.keras.models.load_model(gru_path)
+        metrics = trainer.evaluate_model('gru', model, is_sequence=True)
+        crud.create_model_result(db, schemas.ModelResultCreate(
+            model_name='gru', run_id='init_gru',
+            accuracy=metrics['accuracy'], precision=metrics['precision'], recall=metrics['recall'],
+            f1_score=metrics['f1_score'], roc_auc=metrics['roc_auc'], confusion_matrix=metrics['confusion_matrix'],
+            classification_report={'roc_points': metrics['roc_points']}
+        ))
+
+    # 7. CNN-GRU Baseline
+    cnn_gru_path = os.path.join(MODELS_DIR, 'cnn_gru.keras')
+    db_cnn_gru = db.query(models.ModelResult).filter(models.ModelResult.model_name == 'cnn_gru').first()
+    
+    if not os.path.exists(cnn_gru_path):
+        print("Pre-training CNN-GRU model (fast 10 epochs) for active inference...")
+        model, hist, _ = trainer.train_cnn_gru(weighted=True, epochs=10, batch_size=16)
+        metrics = trainer.evaluate_model('cnn_gru', model, is_sequence=True)
+        crud.create_model_result(db, schemas.ModelResultCreate(
+            model_name='cnn_gru', run_id='init_cnn_gru',
+            accuracy=metrics['accuracy'], precision=metrics['precision'], recall=metrics['recall'],
+            f1_score=metrics['f1_score'], roc_auc=metrics['roc_auc'], confusion_matrix=metrics['confusion_matrix'],
+            classification_report={'roc_points': metrics['roc_points']}
+        ))
+        crud.create_experiment_log(db, 'cnn_gru', 'init_cnn_gru', {'epochs': 10, 'batch_size': 16}, hist)
+    elif not db_cnn_gru:
+        print("Model file exists but DB result missing. Seeding CNN-GRU benchmark metrics...")
+        model = tf.keras.models.load_model(cnn_gru_path)
+        metrics = trainer.evaluate_model('cnn_gru', model, is_sequence=True)
+        crud.create_model_result(db, schemas.ModelResultCreate(
+            model_name='cnn_gru', run_id='init_cnn_gru',
+            accuracy=metrics['accuracy'], precision=metrics['precision'], recall=metrics['recall'],
+            f1_score=metrics['f1_score'], roc_auc=metrics['roc_auc'], confusion_matrix=metrics['confusion_matrix'],
+            classification_report={'roc_points': metrics['roc_points']}
+        ))
+
 
 @router.post("/", response_model=schemas.PredictionDetailResponse)
 def run_model_inference(
@@ -235,9 +313,9 @@ def run_model_inference(
         # Compute SHAP values for the full sensor array in one optimized batch
         shap_val_dict = explainer_engine.explain_tabular_batch(req.model_name, X_tab)
             
-    elif req.model_name == 'hybrid_model':
-        # Explain and predict Hybrid sequence model
-        explanation = explainer_engine.explain_hybrid_sequence(X_seq)
+    elif req.model_name in ['hybrid_model', 'cnn', 'gru', 'cnn_gru']:
+        # Explain and predict Sequence model
+        explanation = explainer_engine.explain_sequence_instance(req.model_name, X_seq)
         
         prob_cap = explanation['prediction']['CaP']
         prob_hbp = explanation['prediction']['HBP']

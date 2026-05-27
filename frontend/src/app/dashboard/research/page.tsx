@@ -161,6 +161,9 @@ export default function ResearchPage() {
     return chartPoints.map(p => ({
       fpr: parseFloat(p.fpr.toFixed(3)),
       'Hybrid Model': getModelTprAtFpr('hybrid_model', p.fpr),
+      'CNN Baseline': getModelTprAtFpr('cnn', p.fpr),
+      'GRU Baseline': getModelTprAtFpr('gru', p.fpr),
+      'CNN-GRU Baseline': getModelTprAtFpr('cnn_gru', p.fpr),
       'Baseline DNN': getModelTprAtFpr('baseline_dnn', p.fpr),
       'Random Forest': getModelTprAtFpr('random_forest', p.fpr),
       'XGBoost': getModelTprAtFpr('xgboost', p.fpr),
@@ -243,13 +246,25 @@ export default function ResearchPage() {
               </tr>
             </thead>
             <tbody>
-              {['hybrid_model', 'baseline_dnn', 'random_forest', 'xgboost'].map((name) => {
+              {['hybrid_model', 'cnn', 'gru', 'cnn_gru', 'baseline_dnn', 'random_forest', 'xgboost'].map((name) => {
                 const b = benchmarks.find(item => item.model_name === name);
                 const isTrainPending = trainingState[name] === 'training';
+                
+                const getModelDisplayName = (modelName: string) => {
+                  if (modelName === 'hybrid_model') return '★ Proposed Hybrid CNN-GRU-Attn';
+                  if (modelName === 'baseline_dnn') return 'Baseline Dense NN (FFNN)';
+                  if (modelName === 'random_forest') return 'Random Forest Baseline';
+                  if (modelName === 'xgboost') return 'XGBoost Baseline';
+                  if (modelName === 'cnn') return 'CNN Sequence Baseline';
+                  if (modelName === 'gru') return 'GRU Sequence Baseline';
+                  if (modelName === 'cnn_gru') return 'CNN-GRU Sequence Baseline';
+                  return modelName.replace('_', ' ');
+                };
+
                 return (
                   <tr key={name} className="border-b border-slate-900 hover:bg-slate-900/10 transition-colors">
                     <td className="py-3.5 px-6 font-semibold text-white capitalize">
-                      {name === 'hybrid_model' ? '★ Proposed Hybrid CNN-GRU-Attn' : name.replace('_', ' ')}
+                      {getModelDisplayName(name)}
                     </td>
                     <td className="py-3.5 px-6 text-slate-300">
                       {b ? `${(b.accuracy * 100).toFixed(1)}%` : '—'}
@@ -306,6 +321,9 @@ export default function ResearchPage() {
                 <Tooltip contentStyle={{ backgroundColor: '#090e18', borderColor: '#334155' }} />
                 <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                 <Line type="monotone" dataKey="Hybrid Model" stroke="#a78bfa" strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="CNN Baseline" stroke="#fb923c" strokeWidth={1.5} dot={false} />
+                <Line type="monotone" dataKey="GRU Baseline" stroke="#60a5fa" strokeWidth={1.5} dot={false} />
+                <Line type="monotone" dataKey="CNN-GRU Baseline" stroke="#e879f9" strokeWidth={1.5} dot={false} />
                 <Line type="monotone" dataKey="Baseline DNN" stroke="#f43f5e" strokeWidth={1.5} dot={false} />
                 <Line type="monotone" dataKey="Random Forest" stroke="#34d399" strokeWidth={1.5} dot={false} />
                 <Line type="monotone" dataKey="XGBoost" stroke="#22d3ee" strokeWidth={1.5} dot={false} />
@@ -327,6 +345,9 @@ export default function ResearchPage() {
               className="bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-md py-1 px-2.5 text-xs text-slate-300 focus:outline-none transition-all"
             >
               <option value="hybrid_model">Hybrid Model</option>
+              <option value="cnn">CNN Baseline</option>
+              <option value="gru">GRU Baseline</option>
+              <option value="cnn_gru">CNN-GRU Baseline</option>
               <option value="baseline_dnn">Baseline DNN</option>
               <option value="random_forest">Random Forest</option>
               <option value="xgboost">XGBoost</option>
@@ -482,6 +503,53 @@ export default function ResearchPage() {
         </div>
 
       </div>
+
+      {/* Matplotlib Publication Plots section */}
+      <div className="glass-card p-6 rounded-xl border border-slate-800/80 space-y-4">
+        <div>
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <RefreshCw className="w-5 h-5 text-violet-400" />
+            <span>Matplotlib Publication-Grade Generated Charts</span>
+          </h2>
+          <p className="text-slate-400 text-xs mt-1">
+            Download high-resolution, publication-grade analytical plots generated during model training and evaluation.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+          {[
+            { name: "Model Performance Comparison", url: "/static/plots/model_comparison.png" },
+            { name: "Proposed Hybrid ROC Curve", url: "/static/plots/hybrid_model_roc.png" },
+            { name: "Proposed Hybrid Confusion Matrix", url: "/static/plots/hybrid_model_confusion_matrix.png" },
+            { name: "Proposed Hybrid Attention Weights", url: "/static/plots/hybrid_model_attention.png" },
+            { name: "Proposed Hybrid Loss/Acc curves", url: "/static/plots/hybrid_model_learning_curves.png" },
+            { name: "CNN Confusion Matrix", url: "/static/plots/cnn_confusion_matrix.png" },
+            { name: "CNN Loss/Acc curves", url: "/static/plots/cnn_learning_curves.png" },
+            { name: "GRU Confusion Matrix", url: "/static/plots/gru_confusion_matrix.png" },
+            { name: "GRU Loss/Acc curves", url: "/static/plots/gru_learning_curves.png" },
+            { name: "CNN-GRU Confusion Matrix", url: "/static/plots/cnn_gru_confusion_matrix.png" },
+            { name: "CNN-GRU Loss/Acc curves", url: "/static/plots/cnn_gru_learning_curves.png" },
+            { name: "Baseline DNN Confusion Matrix", url: "/static/plots/baseline_dnn_confusion_matrix.png" },
+            { name: "Baseline DNN Loss/Acc curves", url: "/static/plots/baseline_dnn_learning_curves.png" },
+            { name: "Random Forest Confusion Matrix", url: "/static/plots/random_forest_confusion_matrix.png" },
+            { name: "Random Forest Feature Importance", url: "/static/plots/random_forest_feature_importance.png" },
+            { name: "XGBoost Confusion Matrix", url: "/static/plots/xgboost_confusion_matrix.png" },
+            { name: "XGBoost Feature Importance", url: "/static/plots/xgboost_feature_importance.png" },
+          ].map((plot) => (
+            <a 
+              key={plot.name}
+              href={`${API_BASE}${plot.url}`}
+              target="_blank"
+              rel="noreferrer"
+              className="bg-slate-950/60 hover:bg-slate-900 border border-slate-900 hover:border-slate-800 p-3 rounded-lg flex flex-col justify-between transition-all"
+            >
+              <span className="text-xs font-semibold text-white truncate">{plot.name}</span>
+              <span className="text-[10px] text-slate-500 mt-2 hover:text-indigo-400 block text-right">View/Download →</span>
+            </a>
+          ))}
+        </div>
+      </div>
+
     </div>
   );
 }

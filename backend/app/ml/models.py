@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, Conv1D, GRU, BatchNormalization, Dropout, Layer
+from tensorflow.keras.layers import Input, Dense, Conv1D, GRU, BatchNormalization, Dropout, Layer, GlobalAveragePooling1D
 import tensorflow.keras.backend as K
 
 class TemporalAttention(Layer):
@@ -98,4 +98,65 @@ def build_hybrid_model(seq_len=32, feature_dim=31):
     
     # Model returns class probability output AND attention weights (useful for XAI inference)
     model = Model(inputs=inputs, outputs=[class_output, attn_weights], name='Hybrid_CNN_GRU_Attention')
+    return model
+
+
+def build_cnn_model(seq_len=32, feature_dim=31):
+    """
+    Baseline CNN Model (without GRU or Attention):
+    CNN -> BN -> Dropout -> CNN -> BN -> Dropout -> GlobalAveragePooling -> Dense -> BN -> Dropout -> Softmax
+    """
+    inputs = Input(shape=(seq_len, feature_dim), name='seq_input')
+    x = Conv1D(filters=64, kernel_size=3, padding='same', activation='relu')(inputs)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    x = Conv1D(filters=32, kernel_size=3, padding='same', activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    x = GlobalAveragePooling1D()(x)
+    x = Dense(32, activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    class_output = Dense(2, activation='softmax', name='class_output')(x)
+    model = Model(inputs=inputs, outputs=class_output, name='CNN_Sequence')
+    return model
+
+
+def build_gru_model(seq_len=32, feature_dim=31):
+    """
+    Baseline GRU Model (without CNN or Attention):
+    GRU -> BN -> Dropout -> GRU -> BN -> Dropout -> Dense -> BN -> Dropout -> Softmax
+    """
+    inputs = Input(shape=(seq_len, feature_dim), name='seq_input')
+    x = GRU(units=64, return_sequences=True)(inputs)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    x = GRU(units=32, return_sequences=False)(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    x = Dense(32, activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    class_output = Dense(2, activation='softmax', name='class_output')(x)
+    model = Model(inputs=inputs, outputs=class_output, name='GRU_Sequence')
+    return model
+
+
+def build_cnn_gru_model(seq_len=32, feature_dim=31):
+    """
+    Baseline CNN-GRU Model (without Attention):
+    CNN -> BN -> Dropout -> GRU -> BN -> Dropout -> Dense -> BN -> Dropout -> Softmax
+    """
+    inputs = Input(shape=(seq_len, feature_dim), name='seq_input')
+    x = Conv1D(filters=64, kernel_size=3, padding='same', activation='relu')(inputs)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    x = GRU(units=64, return_sequences=False)(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    x = Dense(32, activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.2)(x)
+    class_output = Dense(2, activation='softmax', name='class_output')(x)
+    model = Model(inputs=inputs, outputs=class_output, name='CNN_GRU_Sequence')
     return model

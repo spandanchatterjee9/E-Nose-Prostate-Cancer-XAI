@@ -44,6 +44,25 @@ def run_background_training(model_name: str, weighted: bool, run_id: str, db_ses
             model, hist, train_time = trainer.train_hybrid_model(weighted=weighted, epochs=80, batch_size=16)
             metrics = trainer.evaluate_model('hybrid_model', model, is_sequence=True)
             hist['train_time'] = train_time
+            
+        elif model_name == 'cnn':
+            # Train for 80 epochs in background
+            model, hist, train_time = trainer.train_cnn(weighted=weighted, epochs=80, batch_size=16)
+            metrics = trainer.evaluate_model('cnn', model, is_sequence=True)
+            hist['train_time'] = train_time
+            
+        elif model_name == 'gru':
+            # Train for 80 epochs in background
+            model, hist, train_time = trainer.train_gru(weighted=weighted, epochs=80, batch_size=16)
+            metrics = trainer.evaluate_model('gru', model, is_sequence=True)
+            hist['train_time'] = train_time
+            
+        elif model_name == 'cnn_gru':
+            # Train for 80 epochs in background
+            model, hist, train_time = trainer.train_cnn_gru(weighted=weighted, epochs=80, batch_size=16)
+            metrics = trainer.evaluate_model('cnn_gru', model, is_sequence=True)
+            hist['train_time'] = train_time
+            
         else:
             print(f"Unknown model name for training: {model_name}")
             return
@@ -64,7 +83,7 @@ def run_background_training(model_name: str, weighted: bool, run_id: str, db_ses
         # Log hyperparameters and training histories
         hyperparams = {
             'weighted': weighted,
-            'epochs': 150 if model_name == 'baseline_dnn' else (80 if model_name == 'hybrid_model' else 100),
+            'epochs': 150 if model_name == 'baseline_dnn' else 80,
             'batch_size': 32 if model_name == 'baseline_dnn' else 16
         }
         crud.create_experiment_log(db, model_name, run_id, hyperparams, hist)
@@ -85,10 +104,10 @@ def trigger_model_training(
     current_user: models.User = Depends(get_current_user)
 ):
     """
-    Asynchronously triggers re-training of a specific model (dnn, rf, xgb, hybrid).
+    Asynchronously triggers re-training of a specific model (dnn, rf, xgb, cnn, gru, cnn_gru, hybrid).
     Returns immediately with a run_id while training progresses in the background.
     """
-    if model_name not in ['baseline_dnn', 'random_forest', 'xgboost', 'hybrid_model']:
+    if model_name not in ['baseline_dnn', 'random_forest', 'xgboost', 'hybrid_model', 'cnn', 'gru', 'cnn_gru']:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail=f"Invalid model name: {model_name}"
@@ -123,7 +142,16 @@ def get_model_benchmarks(
     from app.api.endpoints.predict import ensure_models_trained
     ensure_models_trained(db)
     
-    return crud.get_latest_model_results(db)
+    results = crud.get_latest_model_results(db)
+    
+    # Generate and save comparative plot dynamically based on latest metrics
+    try:
+        trainer = ModelTrainer()
+        trainer.save_model_comparison_plot(results)
+    except Exception as e:
+        print(f"Error generating comparison plot: {e}")
+        
+    return results
 
 
 @router.get("/ablation")

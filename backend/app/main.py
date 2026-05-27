@@ -26,12 +26,18 @@ finally:
     db.close()
 
 # 3. Create FastAPI app
+from fastapi.staticfiles import StaticFiles
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Explainable AI E-Nose clinical decision support API for Prostate Cancer classification.",
     version="1.0.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+# Mount Static Files for plots
+os.makedirs("static/plots", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # 4. Configure CORS
 app.add_middleware(
